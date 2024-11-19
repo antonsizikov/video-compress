@@ -38,6 +38,34 @@ if not video_files:
 output_folder = os.path.join(input_folder, output_subfolder)  # Определяем путь к подпапке
 os.makedirs(output_folder, exist_ok=True)  # Создаём папку, если её нет
 
+def get_hardware_acceleration():
+    """Проверяет доступные видеоускорения и возвращает подходящий кодек."""
+    try:
+        # Получаем список поддерживаемых аппаратных ускорений
+        result = subprocess.run(
+            ["ffmpeg", "-hwaccels"], capture_output=True, text=True, check=True
+        )
+        available_hwaccels = result.stdout.lower()
+
+        if "cuda" in available_hwaccels:
+            print("Аппаратное ускорение NVIDIA (CUDA) доступно и используется.")
+            return "h264_nvenc"
+        elif "qsv" in available_hwaccels:
+            print("Аппаратное ускорение Intel (QuickSync Video) доступно и используется.")
+            return "h264_qsv"
+        elif "amf" in available_hwaccels:
+            print("Аппаратное ускорение AMD (AMF) доступно и используется.")
+            return "h264_amf"
+        elif "videotoolbox" in available_hwaccels:
+            print("Аппаратное ускорение Apple (VideoToolbox) доступно и используется.")
+            return "h264_videotoolbox"
+        else:
+            print("Аппаратное ускорение недоступно, используется программное кодирование и используется.")
+            return "libx264"
+    except Exception as e:
+        print(f"Ошибка при проверке видеоускорения: {e}")
+        return "libx264"
+
 def calculate_bitrate(file_path, target_size_mb):
     """Рассчитывает видеобитрейт на основе длительности файла и целевого размера."""
     cmd = [
@@ -62,7 +90,7 @@ def calculate_bitrate(file_path, target_size_mb):
 
     return max(100, video_bitrate_kbps)  # Минимальный видеобитрейт = 100 кбит/с
 
-def compress_video(file_path, output_path, video_bitrate):
+def compress_video(file_path, output_path, video_bitrate, encoder):
     """Сжимает видео в два прохода."""
     log_file = "ffmpeg2pass-0.log"
     log_file_mbtree = "ffmpeg2pass-0.log.mbtree"
@@ -70,14 +98,14 @@ def compress_video(file_path, output_path, video_bitrate):
     print("  Проход 1/2...")
     subprocess.run([
         "ffmpeg", "-y", "-i", file_path,
-        "-c:v", "libx264", "-b:v", f"{int(video_bitrate)}k",
+        "-c:v", encoder, "-b:v", f"{int(video_bitrate)}k",
         "-pass", "1", "-an", "-f", "null", "/dev/null"
     ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
 
     print("  Проход 2/2...")
     subprocess.run([
         "ffmpeg", "-y", "-i", file_path,
-        "-c:v", "libx264", "-b:v", f"{int(video_bitrate)}k",
+        "-c:v", encoder, "-b:v", f"{int(video_bitrate)}k",
         "-c:a", "aac", "-b:a", "96k",
         "-pass", "2", 
         output_path
@@ -102,6 +130,7 @@ def format_time(seconds):
     else:
         return f"{int(seconds)} сек."
 
+video_encoder = get_hardware_acceleration()
 start_time = time.time()  # Начало общего таймера
 processed_count = 0  # Счётчик успешно обработанных файлов
 
@@ -116,7 +145,7 @@ for filename in video_files:
 
     try:
         video_bitrate = calculate_bitrate(input_path, target_size_mb)
-        compress_video(input_path, output_path, video_bitrate)
+        compress_video(input_path, output_path, video_bitrate, video_encoder)
 
         compressed_size = get_file_size(output_path)
         time_spent = time.time() - file_start_time
