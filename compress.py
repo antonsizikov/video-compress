@@ -8,18 +8,12 @@ output_suffix = ""
 output_subfolder = "Compressed"
 supported_extensions = (".mp4", ".mkv", ".avi", ".mov", ".webm")
 
-# Запрашиваем у пользователя параметры
+# Запрашиваем путь к папке
 input_folder = input("Введите путь к папке c видеофайлами (по умолчанию директория со скриптом):\n").strip()
 if not input_folder:
     # Установить текущую директорию на папку, где находится скрипт
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     input_folder = os.getcwd()
-
-target_size_mb = input(f"Введите целевой размер файла в МБ (по умолчанию {default_target_size_mb} МБ):\n").strip()
-if not target_size_mb:
-    target_size_mb = default_target_size_mb
-else:
-    target_size_mb = int(target_size_mb)
 
 # Собираем список подходящих файлов
 video_files = [
@@ -33,6 +27,13 @@ video_files = [
 if not video_files:
     print("В папке нет ни одного подходящего видеофайла для конвертации.")
     exit(0)
+
+# Запрашиваем целевой размер файла
+target_size_mb = input(f"Введите целевой размер файла в МБ (по умолчанию {default_target_size_mb} МБ):\n").strip()
+if not target_size_mb:
+    target_size_mb = default_target_size_mb
+else:
+    target_size_mb = int(target_size_mb)
 
 # Создаём папку для выходных файлов
 output_folder = os.path.join(input_folder, output_subfolder)  # Определяем путь к подпапке
