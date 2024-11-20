@@ -154,7 +154,7 @@ for filename in video_files:
 
     try:
         video_bitrate = calculate_bitrate(input_path, target_size_mb)
-        print(f"\nФайл обрабатывается с битрейтом {int(video_bitrate)} Kb/s: {filename}...")
+        print(f"\nФайл обрабатывается с битрейтом {int(video_bitrate)} Kb/s: {filename}")
         file_start_time = time.time()
         compress_video(input_path, output_path, video_bitrate, video_encoder)
 
@@ -173,4 +173,4 @@ for filename in video_files:
 
 
 total_time = time.time() - start_time # Конец общего таймера
-print(f"\nВсего обработано {processed_count} файлов за {format_time(total_time)}")
+print(f"\nОбработано файлов: {processed_count} за {format_time(total_time)}")
