@@ -151,11 +151,10 @@ for filename in video_files:
     output_filename = f"{os.path.splitext(filename)[0]}{output_suffix}.mp4"
     output_path = os.path.join(output_folder, output_filename)
 
-    print(f"\nОбрабатывается файл: {filename}...")
-    file_start_time = time.time()
-
     try:
         video_bitrate = calculate_bitrate(input_path, target_size_mb)
+        print(f"\nФайл обрабатывается с битрейтом {int(video_bitrate)} Kb/s: {filename}...")
+        file_start_time = time.time()
         compress_video(input_path, output_path, video_bitrate, video_encoder)
 
         compressed_size = get_file_size(output_path)
