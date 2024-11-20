@@ -15,6 +15,9 @@ if not input_folder:
     # Установить текущую директорию на папку, где находится скрипт
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     input_folder = os.getcwd()
+else:
+    # Убираем экранированные пробелы
+    input_folder = input_folder.replace("\\ ", " ")
 
 # Собираем список подходящих файлов
 video_files = [
@@ -47,7 +50,7 @@ def calculate_bitrate(file_path, target_size_mb):
         "-show_entries", "format=duration",
         "-v", "quiet", "-of", "csv=p=0"
     ]
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True, shell=False)
 
     if not result.stdout.strip():
         raise ValueError(f"Не удалось определить длительность для файла: {file_path}")
@@ -64,6 +67,7 @@ def calculate_bitrate(file_path, target_size_mb):
 
     return max(100, video_bitrate_kbps)  # Минимальный видеобитрейт = 100 кбит/с
 
+
 def compress_video(file_path, output_path, video_bitrate, encoder):
     """Сжимает видео в два прохода."""
     log_file = "ffmpeg2pass-0.log"
@@ -71,18 +75,17 @@ def compress_video(file_path, output_path, video_bitrate, encoder):
 
     print("  Проход 1/2...")
     subprocess.run([
-        "ffmpeg", "-y", "-i", file_path,
+        "ffmpeg", "-y", "-i", f"{file_path}",
         "-c:v", encoder, "-b:v", f"{int(video_bitrate)}k",
         "-pass", "1", "-an", "-f", "null", "/dev/null"
     ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
 
     print("  Проход 2/2...")
     subprocess.run([
-        "ffmpeg", "-y", "-i", file_path,
+        "ffmpeg", "-y", "-i", f"{file_path}",
         "-c:v", encoder, "-b:v", f"{int(video_bitrate)}k",
         "-c:a", "aac", "-b:a", "96k",
-        "-pass", "2", 
-        output_path
+        "-pass", "2", f"{output_path}"
     ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
 
     # Удаляем файлы логов
