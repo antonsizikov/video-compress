@@ -7,6 +7,7 @@ default_target_size_mb = 94
 output_suffix = ""
 output_subfolder = "Compressed"
 supported_extensions = (".mp4", ".mkv", ".avi", ".mov", ".webm")
+video_encoder = "libx264"
 
 # Запрашиваем путь к папке
 input_folder = input("Введите путь к папке c видеофайлами (по умолчанию директория со скриптом):\n").strip()
@@ -38,34 +39,6 @@ else:
 # Создаём папку для выходных файлов
 output_folder = os.path.join(input_folder, output_subfolder)  # Определяем путь к подпапке
 os.makedirs(output_folder, exist_ok=True)  # Создаём папку, если её нет
-
-def get_hardware_acceleration():
-    """Проверяет доступные видеоускорения и возвращает подходящий кодек."""
-    try:
-        # Получаем список поддерживаемых аппаратных ускорений
-        result = subprocess.run(
-            ["ffmpeg", "-hwaccels"], capture_output=True, text=True, check=True
-        )
-        available_hwaccels = result.stdout.lower()
-
-        if "cuda" in available_hwaccels:
-            print("Доступно аппаратное ускорение NVIDIA (CUDA).")
-            return "h264_nvenc"
-        elif "qsv" in available_hwaccels:
-            print("Доступно аппаратное ускорение Intel (QuickSync Video).")
-            return "h264_qsv"
-        elif "amf" in available_hwaccels:
-            print("Доступно аппаратное ускорение AMD (AMF).")
-            return "h264_amf"
-        elif "videotoolbox" in available_hwaccels:
-            print("Доступно аппаратное ускорение Apple (VideoToolbox).")
-            return "h264_videotoolbox"
-        else:
-            print("Аппаратное ускорение недоступно, используется программное кодирование.")
-            return "libx264"
-    except Exception as e:
-        print(f"Ошибка при проверке видеоускорения: {e}")
-        return "libx264"
 
 def calculate_bitrate(file_path, target_size_mb):
     """Рассчитывает видеобитрейт на основе длительности файла и целевого размера."""
@@ -131,16 +104,41 @@ def format_time(seconds):
     else:
         return f"{int(seconds)} сек."
 
-video_encoder = get_hardware_acceleration()
+def get_hardware_acceleration():
+    """Проверяет доступные видеоускорения и возвращает подходящий кодек."""
+    try:
+        # Получаем список поддерживаемых аппаратных ускорений
+        result = subprocess.run(
+            ["ffmpeg", "-hwaccels"], capture_output=True, text=True, check=True
+        )
+        available_hwaccels = result.stdout.lower()
 
-if video_encoder != "libx264":
-    is_hardware_accelerated = input("Использовать аппаратное ускорение? (по умолчанию ДА) (д/н) (y/n): ").strip()
+        if "cuda" in available_hwaccels:
+            print("Доступно аппаратное ускорение NVIDIA (CUDA).")
+            return "h264_nvenc"
+        elif "qsv" in available_hwaccels:
+            print("Доступно аппаратное ускорение Intel (QuickSync Video).")
+            return "h264_qsv"
+        elif "amf" in available_hwaccels:
+            print("Доступно аппаратное ускорение AMD (AMF).")
+            return "h264_amf"
+        elif "videotoolbox" in available_hwaccels:
+            print("Доступно аппаратное ускорение Apple (VideoToolbox).")
+            return "h264_videotoolbox"
+        else:
+            print("Аппаратное ускорение недоступно, используется программное кодирование.")
+            return "libx264"
+    except Exception as e:
+        print(f"Ошибка при проверке видеоускорения: {e}")
+        return "libx264"
 
-    if str(is_hardware_accelerated).lower() not in ["д", "y", ""]:
-        video_encoder = "libx264"
-        print(f"Выбрано программное ускорение: {video_encoder}")
-    else:
-        print(f"Выбрано аппаратное ускорение: {video_encoder}")
+is_hardware_accelerated = input("Использовать аппаратное ускорение? (по умолчанию НЕТ) (д/н) (y/n): ")
+
+if str(is_hardware_accelerated).lower().strip() in ["д", "y"]:
+    video_encoder = get_hardware_acceleration()
+    print(f"Выбрано программное ускорение: {video_encoder}")
+else:
+    print(f"Используется программное кодирование: {video_encoder}")
 
 start_time = time.time()  # Начало общего таймера
 processed_count = 0  # Счётчик успешно обработанных файлов
