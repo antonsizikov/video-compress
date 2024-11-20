@@ -5,7 +5,11 @@ Targeted size is usfull if you want to compress video for some of the social net
 
 Also you can eneble hardware acceleration to speed up the process but it is not recommended if you want the best quality.
 ## Using
-To start the script type in terminal following command:
+Clone the repository to your computer:
+```
+git clone https://github.com/antonsizikov/video-compress.git
+```
+To start the script type the following command in folder with the script:
 ```
 python3 compress.py
 ```
