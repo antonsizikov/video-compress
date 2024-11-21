@@ -9,23 +9,32 @@ output_subfolder = "Compressed"
 supported_extensions = (".mp4", ".mkv", ".avi", ".mov", ".webm")
 video_encoder = "libx264"
 
-# Запрашиваем путь к папке
-input_folder = input("Введите путь к папке c видеофайлами (по умолчанию директория со скриптом):\n").strip()
-if not input_folder:
+# Запрашиваем путь к папке или файлу
+input_path = input("Введите путь к папке или файлу с видео (по умолчанию директория со скриптом):\n").strip()
+if not input_path:
     # Установить текущую директорию на папку, где находится скрипт
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    input_folder = os.getcwd()
+    input_path = os.getcwd()
 else:
     # Убираем экранированные пробелы
-    input_folder = input_folder.replace("\\ ", " ")
+    input_path = input_path.replace("\\ ", " ")
 
-# Собираем список подходящих файлов
-video_files = [
-    f for f in os.listdir(input_folder)
-    if os.path.isfile(os.path.join(input_folder, f)) and  # Это файл
-    not f.startswith(".") and                            # Не скрытый файл
-    f.lower().endswith(supported_extensions)             # Поддерживаемое расширение
-]
+# Проверяем, является ли путь файлом или папкой
+if os.path.isdir(input_path):
+    # Если это папка, собираем список подходящих файлов
+    video_files = [
+        f for f in os.listdir(input_path)
+        if os.path.isfile(os.path.join(input_path, f)) and  # Это файл
+        not f.startswith(".") and                            # Не скрытый файл
+        f.lower().endswith(supported_extensions)             # Поддерживаемое расширение
+    ]
+elif os.path.isfile(input_path) and input_path.lower().endswith(supported_extensions):
+    # Если это файл с поддерживаемым расширением, добавляем его в список
+    video_files = [os.path.basename(input_path)]
+    input_path = os.path.dirname(input_path)  # Устанавливаем input_path как директорию файла
+else:
+    print("Указанный путь не является файлом или папкой с поддерживаемым видеоформатом.")
+    exit(0)
 
 # Если подходящих файлов нет, выводим сообщение и выходим
 if not video_files:
@@ -40,7 +49,7 @@ else:
     target_size_mb = int(target_size_mb)
 
 # Создаём папку для выходных файлов
-output_folder = os.path.join(input_folder, output_subfolder)  # Определяем путь к подпапке
+output_folder = os.path.join(input_path, output_subfolder)  # Определяем путь к подпапке
 os.makedirs(output_folder, exist_ok=True)  # Создаём папку, если её нет
 
 def calculate_bitrate(file_path, target_size_mb):
@@ -148,15 +157,15 @@ processed_count = 0  # Счётчик успешно обработанных ф
 
 # Основной цикл обработки
 for filename in video_files:
-    input_path = os.path.join(input_folder, filename)
+    input_path_file = os.path.join(input_path, filename)
     output_filename = f"{os.path.splitext(filename)[0]}{output_suffix}.mp4"
     output_path = os.path.join(output_folder, output_filename)
 
     try:
-        video_bitrate = calculate_bitrate(input_path, target_size_mb)
+        video_bitrate = calculate_bitrate(input_path_file, target_size_mb)
         print(f"\nФайл обрабатывается с битрейтом {int(video_bitrate)} Kb/s: {filename}")
         file_start_time = time.time()
-        compress_video(input_path, output_path, video_bitrate, video_encoder)
+        compress_video(input_path_file, output_path, video_bitrate, video_encoder)
 
         compressed_size = get_file_size(output_path)
         time_spent = time.time() - file_start_time
