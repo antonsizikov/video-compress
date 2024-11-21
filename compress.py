@@ -156,14 +156,14 @@ start_time = time.time()  # Начало общего таймера
 processed_count = 0  # Счётчик успешно обработанных файлов
 
 # Основной цикл обработки
-for filename in video_files:
+for index, filename in enumerate(video_files, start=1):
     input_path_file = os.path.join(input_path, filename)
     output_filename = f"{os.path.splitext(filename)[0]}{output_suffix}.mp4"
     output_path = os.path.join(output_folder, output_filename)
 
     try:
         video_bitrate = calculate_bitrate(input_path_file, target_size_mb)
-        print(f"\nФайл обрабатывается с битрейтом {int(video_bitrate)} Kb/s: {filename}")
+        print(f"\nФайл {index}/{len(video_files)} обрабатывается с битрейтом {int(video_bitrate)} Kb/s: {filename}")
         file_start_time = time.time()
         compress_video(input_path_file, output_path, video_bitrate, video_encoder)
 
